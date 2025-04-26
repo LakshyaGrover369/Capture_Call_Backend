@@ -16,8 +16,13 @@ connectDB();
 
 const app = express();
 
-// Middleware
-app.use(cors());
+// Configure CORS properly
+const corsOptions = {
+  origin: ['https://capture-call.vercel.app'], // allow frontend origin
+  credentials: true, // allow cookies, authorization headers
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Routes
