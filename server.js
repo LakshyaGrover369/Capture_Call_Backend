@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
+const serverless = require('serverless-http');
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -30,8 +31,12 @@ app.use('/api/auth', authRoutes);  // Use the imported routes
 app.use('/api/users', userRoutes); // Use the imported routes
 app.use('/api/admin', adminRoutes);
 
-const PORT = process.env.PORT || 5000;
+// const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+// app.listen(PORT, () => {
+//   console.log(`Server is running on port ${PORT}`);
+// });
+
+// Instead of app.listen (❌), export the app (✅)
+module.exports = app;
+module.exports.handler = serverless(app);
