@@ -20,8 +20,7 @@ const app = express();
 
 // Configure CORS properly
 const corsOptions = {
-  origin: ["https://capture-call.vercel.app"], // allow frontend origins
-  // origin: ["https://capture-call.vercel.app", "http://localhost:5173"], // allow frontend origins
+  origin: ["https://capture-call.vercel.app", "http://localhost:5173"], // allow frontend origins
   credentials: true, // allow cookies, authorization headers
 };
 
