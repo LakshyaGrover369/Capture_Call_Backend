@@ -20,7 +20,8 @@ const app = express();
 
 // Configure CORS properly
 const corsOptions = {
-  origin: ["https://capture-call.vercel.app", "http://localhost:5173"], // allow frontend origins
+  origin: ["https://capture-call.vercel.app"], // allow frontend origins
+  // origin: ["https://capture-call.vercel.app", "http://localhost:5173"], // allow frontend origins
   credentials: true, // allow cookies, authorization headers
 };
 
@@ -38,11 +39,11 @@ app.use("/api/auth", authRoutes); // Use the imported routes
 app.use("/api/users", userRoutes); // Use the imported routes
 app.use("/api/admin", adminRoutes);
 
-const PORT = process.env.PORT || 5000;
+// const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+// app.listen(PORT, () => {
+//   console.log(`Server is running on port ${PORT}`);
+// });
 
 // Export the app for serverless deployment
 module.exports = app;
