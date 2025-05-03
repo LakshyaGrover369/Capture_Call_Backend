@@ -60,7 +60,7 @@ const addProspect = async (req, res) => {
       Badge_Status,
     } = req.body;
 
-    // Check if Aadhaar or Badge already exists
+    // Check if Aadhaar, Badge or Phone already exists
     const aadhaarExists = await Prospect.findOne({ AADHAAR });
     if (aadhaarExists) {
       return res.status(400).json({
@@ -72,6 +72,13 @@ const addProspect = async (req, res) => {
     if (badgeExists) {
       return res.status(400).json({
         message: "Prospect already exists with this Badge number",
+      });
+    }
+
+    const Phone_NumberExists = await Prospect.findOne({ Phone_Number });
+    if (Phone_NumberExists) {
+      return res.status(400).json({
+        message: "Prospect already exists with this Phone number",
       });
     }
 

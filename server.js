@@ -27,6 +27,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
+// Configuring the upload directory for multer
 app.use(
   "/prospectsPhotos",
   express.static(path.join(__dirname, "prospectsPhotos"))
