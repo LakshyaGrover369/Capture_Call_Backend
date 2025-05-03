@@ -29,12 +29,12 @@ const ProspectSchema = new mongoose.Schema(
     Phone_Number: {
       type: String,
       unique: true,
-      // required: true,
+      required: true,
     },
     Badge: {
       type: String,
       unique: true,
-      // required: true,
+      required: true,
     },
     Emergency_Contact: {
       type: String,

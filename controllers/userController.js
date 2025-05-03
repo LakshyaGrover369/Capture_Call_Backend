@@ -1,7 +1,28 @@
 const User = require("../models/User");
 const Prospect = require("../models/Prospect");
-const multer = require("multer");
-const path = require("path");
+const fs = require("fs");
+const XLSX = require("xlsx");
+
+const REQUIRED_FIELDS = [
+  "Sewadar_Name",
+  "Father_Husband_Name",
+  "Guardian_Relation",
+  "Gender",
+  "AGE",
+  "AADHAAR",
+  "Address",
+  "Phone_Number",
+  "Badge",
+  "Emergency_Contact",
+  "DOB",
+  "DEPT_FINALISED_BY_CENTER",
+  "Marital_Status",
+  "DOI",
+  "Is_Initiated",
+  "Badge_Status",
+  "Blood_Group",
+  "Photo",
+];
 
 // Get all users
 const getAllUsers = async (req, res) => {
@@ -129,6 +150,90 @@ const addProspect = async (req, res) => {
   }
 };
 
+const addProspectsByExcel = async (req, res) => {
+  try {
+    const filePath = req.file.path;
+    console.log("Uploaded file path:", filePath);
+
+    const workbook = XLSX.readFile(filePath);
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+    const data = XLSX.utils.sheet_to_json(sheet);
+
+    const errors = [];
+    const createdProspects = [];
+
+    for (let i = 0; i < data.length; i++) {
+      const row = data[i];
+
+      // Check for missing fields
+      const missingFields = REQUIRED_FIELDS.filter((field) => !(field in row));
+      if (missingFields.length > 0) {
+        errors.push({
+          row: i + 2,
+          error: `Missing fields: ${missingFields.join(", ")}`,
+        });
+        continue;
+      }
+
+      // Check duplicates
+      const [aadhaarExists, badgeExists, phoneExists] = await Promise.all([
+        Prospect.findOne({ AADHAAR: row.AADHAAR }),
+        Prospect.findOne({ Badge: row.Badge }),
+        Prospect.findOne({ Phone_Number: row.Phone_Number }),
+      ]);
+
+      if (aadhaarExists || badgeExists || phoneExists) {
+        let duplicateFields = [];
+        if (aadhaarExists) duplicateFields.push("AADHAAR");
+        if (badgeExists) duplicateFields.push("Badge");
+        if (phoneExists) duplicateFields.push("Phone_Number");
+
+        errors.push({
+          row: i + 2,
+          error: `Duplicate in: ${duplicateFields.join(", ")}`,
+        });
+        continue;
+      }
+
+      // Create new prospect
+      const newProspect = new Prospect({
+        Sewadar_Name: row.Sewadar_Name,
+        Father_Husband_Name: row.Father_Husband_Name,
+        Guardian_Relation: row.Guardian_Relation,
+        Gender: row.Gender,
+        AGE: row.AGE,
+        AADHAAR: row.AADHAAR,
+        Address: row.Address,
+        Phone_Number: row.Phone_Number,
+        Badge: row.Badge,
+        Emergency_Contact: row.Emergency_Contact,
+        DOB: new Date(row.DOB),
+        DEPT_FINALISED_BY_CENTER: row.DEPT_FINALISED_BY_CENTER,
+        Marital_Status: row.Marital_Status,
+        DOI: new Date(row.DOI),
+        Is_Initiated: row.Is_Initiated === "true" || row.Is_Initiated === true,
+        Badge_Status: row.Badge_Status,
+        Blood_Group: row.Blood_Group,
+        Photo: row.Photo || null, // Now populated from Excel
+      });
+
+      await newProspect.save();
+      createdProspects.push(newProspect);
+    }
+
+    fs.unlinkSync(filePath); // Delete uploaded file
+
+    res.status(201).json({
+      success: true,
+      createdCount: createdProspects.length,
+      errors,
+    });
+  } catch (error) {
+    console.error("Error in addProspectsByExcel:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
 // Get all prospects with photo URLs
 const getAllProspects = async (req, res) => {
   try {
@@ -159,6 +264,7 @@ const getAllProspects = async (req, res) => {
 
 module.exports = {
   addProspect,
+  addProspectsByExcel,
   getAllUsers,
   deleteUser,
   getAllProspects,

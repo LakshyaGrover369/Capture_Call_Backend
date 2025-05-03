@@ -4,10 +4,12 @@ const {
   getAllUsers,
   deleteUser,
   addProspect,
+  addProspectsByExcel,
   getAllProspects,
 } = require("../controllers/userController");
 const { protect, authorize } = require("../middleware/auth");
-const upload = require("../middleware/uploadMiddleware");
+const uploadPhotoMiddleware = require("../middleware/uploadPhotoMiddleware");
+const uploadExcelMiddleware = require("../middleware/uploadExcelMiddleware");
 
 // Routes
 router.get("/getAllUsers", protect, authorize("admin"), getAllUsers);
@@ -17,7 +19,7 @@ router.post(
   protect,
   authorize("user", "admin"),
   (req, res, next) => {
-    upload.single("Photo")(req, res, function (err) {
+    uploadPhotoMiddleware.single("Photo")(req, res, function (err) {
       if (err) {
         console.error("Multer error:", err.message);
         return res.status(400).json({ message: err.message });
@@ -26,6 +28,25 @@ router.post(
     });
   },
   addProspect
+);
+router.post(
+  "/addProspectByExcel",
+  protect,
+  authorize("user", "admin"),
+  (req, res, next) => {
+    uploadExcelMiddleware.single("ProspectsExcelData")(
+      req,
+      res,
+      function (err) {
+        if (err) {
+          console.error("Multer error:", err.message);
+          return res.status(400).json({ message: err.message });
+        }
+        next();
+      }
+    );
+  },
+  addProspectsByExcel
 );
 router.get(
   "/getAllProspects",
