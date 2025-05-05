@@ -1,31 +1,28 @@
 const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const cloudinary = require("cloudinary").v2;
 
-const uploadPath = path.join(__dirname, "../prospectsPhotos");
-if (!fs.existsSync(uploadPath)) {
-  fs.mkdirSync(uploadPath, { recursive: true });
-}
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME, // Set in your .env file
+  api_key: process.env.CLOUDINARY_API_KEY, // Set in your .env file
+  api_secret: process.env.CLOUDINARY_API_SECRET, // Set in your .env file
+});
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadPath = path.join(__dirname, "../prospectsPhotos");
-    // console.log("Uploading to:", uploadPath); // Debugging
-    cb(null, uploadPath);
-  },
-  filename: (req, file, cb) => {
-    const uniqueFilename = `${Date.now()}${file.originalname}`;
-    // console.log("Generated filename:", uniqueFilename); // Debugging
-    cb(null, uniqueFilename);
+// Configure Cloudinary storage for multer
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "prospectsPhotos", // Folder name in Cloudinary
+    allowed_formats: ["jpeg", "jpg", "png"], // Allowed file formats
+    public_id: (req, file) => `${Date.now()}-${file.originalname}`, // Unique file name
   },
 });
 
+// File filter to validate image types
 const fileFilter = (req, file, cb) => {
-  // console.log("File MIME type:", file.mimetype); // Debugging
-  // console.log("File extension:", path.extname(file.originalname).toLowerCase()); // Debugging
-
   const fileTypes = /jpeg|jpg|png/;
-  const extname = fileTypes.test(path.extname(file.originalname).toLowerCase());
+  const extname = fileTypes.test(file.originalname.toLowerCase());
   const mimetype = fileTypes.test(file.mimetype);
 
   if (extname && mimetype) {
@@ -35,6 +32,7 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
+// Configure multer with Cloudinary storage
 const upload = multer({ storage, fileFilter });
 
 module.exports = upload;

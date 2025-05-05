@@ -120,8 +120,9 @@ const addProspect = async (req, res) => {
       DOI,
       Is_Initiated,
       Badge_Status,
-      Photo: req.file ? `prospectsPhotos/${req.file.filename}` : null,
+      Photo: req.file ? req.file.path : null, // Cloudinary URL
     });
+
     res.status(201).json({
       success: true,
       data: {
