@@ -17,13 +17,21 @@ const app = express();
 const allowedOrigins = [
   "https://capture-call-frontend-vkeq-lakshyas-projects-c97e54f6.vercel.app/",
   "https://capture-call-frontend-vkeq-git-main-lakshyas-projects-c97e54f6.vercel.app/",
-  "capture-call-frontend-vkeq-g2jvdomhn-lakshyas-projects-c97e54f6.vercel.app",
+  "https://capture-call-frontend-vkeq-g2jvdomhn-lakshyas-projects-c97e54f6.vercel.app",
   "https://capture-call.vercel.app",
   "http://localhost:5173",
 ];
 
 const corsOptions = {
-  origin: allowedOrigins,
+  origin: function (origin, callback) {
+    console.log("CORS request from origin:", origin);
+
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
   credentials: true,
 };
 
