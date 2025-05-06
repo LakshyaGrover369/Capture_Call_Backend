@@ -43,6 +43,9 @@ app.use("/api/auth", require("./routes/auth"));
 app.use("/api/users", require("./routes/user"));
 app.use("/api/admin", require("./routes/admin"));
 
+app.get("/", () => {
+  console.log(`App is running on port ${PORT}`);
+});
 // Connect to database when Lambda starts
 connectDB().catch(console.error);
 app.listen(PORT, () => {
