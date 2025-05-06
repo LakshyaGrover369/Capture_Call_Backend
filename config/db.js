@@ -1,16 +1,24 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(process.env.MONGO_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    // Modern MongoDB connection (no deprecated options needed)
+    const conn = await mongoose.connect(process.env.MONGO_URI);
     console.log(`MongoDB Connected: ${conn.connection.host}`);
+    return conn; // Return the connection object
   } catch (error) {
     console.error(`Error: ${error.message}`);
-    process.exit(1);
+    throw error; // Throw instead of process.exit for serverless
   }
 };
 
-module.exports = connectDB;
+// For serverless environments - cache the connection
+let cachedConnection = null;
+
+module.exports = async () => {
+  if (cachedConnection) {
+    return cachedConnection;
+  }
+  cachedConnection = await connectDB();
+  return cachedConnection;
+};
