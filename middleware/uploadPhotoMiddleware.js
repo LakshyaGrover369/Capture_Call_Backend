@@ -15,7 +15,7 @@ const storage = new CloudinaryStorage({
   params: {
     folder: "prospectsPhotos", // Folder name in Cloudinary
     allowed_formats: ["jpeg", "jpg", "png"], // Allowed file formats
-    public_id: (req, file) => `${Date.now()}-${file.originalname}`, // Unique file name
+    public_id: (req, file) => `${Date.now()}${file.originalname}`, // Unique file name
   },
 });
 
