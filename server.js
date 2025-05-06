@@ -8,6 +8,7 @@ const serverless = require("serverless-http");
 dotenv.config();
 
 const app = express();
+const PORT = 4000;
 
 // CORS Configuration
 const allowedOrigins =
@@ -44,6 +45,9 @@ app.use("/api/admin", require("./routes/admin"));
 
 // Connect to database when Lambda starts
 connectDB().catch(console.error);
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
 
 // Export the serverless app
 module.exports = serverless(app);
