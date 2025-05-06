@@ -1,41 +1,39 @@
-// const multer = require("multer");
-// const path = require("path");
-// const fs = require("fs");
+const multer = require("multer");
+const cloudinary = require("../config/cloudinary");
+const streamifier = require("streamifier");
 
-// const uploadPath = path.join(__dirname, "../uploadedExcels");
-// if (!fs.existsSync(uploadPath)) {
-//   fs.mkdirSync(uploadPath, { recursive: true });
-// }
+// Multer setup: store files in memory
+const storage = multer.memoryStorage();
+const fileFilter = (req, file, cb) => {
+  const allowedMimeTypes = [
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/vnd.ms-excel",
+  ];
+  if (allowedMimeTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error("Only Excel files are allowed"));
+  }
+};
 
-// const storage = multer.diskStorage({
-//   destination: (req, file, cb) => {
-//     const uploadPath = path.join(__dirname, "../uploadedExcels");
-//     console.log("Upload path:", uploadPath);
-//     cb(null, uploadPath);
-//   },
-//   filename: (req, file, cb) => {
-//     const uniqueFilename = `${Date.now()}-${file.originalname}`;
-//     console.log("Unique filename:", uniqueFilename);
-//     cb(null, uniqueFilename);
-//   },
-// });
+const upload = multer({ storage, fileFilter });
 
-// const fileFilter = (req, file, cb) => {
-//   console.log("File filter called:", file.originalname, file.mimetype);
-//   const fileTypes =
-//     /vnd.openxmlformats-officedocument.spreadsheetml.sheet|vnd.ms-excel/;
-//   const extname = /\.(xls|xlsx)$/.test(
-//     path.extname(file.originalname).toLowerCase()
-//   );
-//   const mimetype = fileTypes.test(file.mimetype);
+// Upload to Cloudinary
+const uploadToCloudinary = (fileBuffer, fileName) => {
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        resource_type: "raw",
+        public_id: `excel_uploads/${Date.now()}-${fileName}`,
+      },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result);
+      }
+    );
 
-//   if (extname && mimetype) {
-//     cb(null, true);
-//   } else {
-//     cb(new Error("Only Excel files are allowed"));
-//   }
-// };
+    streamifier.createReadStream(fileBuffer).pipe(uploadStream);
+  });
+};
 
-// const upload = multer({ storage, fileFilter });
-
-// module.exports = upload;
+module.exports = { upload, uploadToCloudinary };

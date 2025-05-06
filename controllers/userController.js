@@ -1,6 +1,8 @@
 const User = require("../models/User");
 const Prospect = require("../models/Prospect");
 const fs = require("fs");
+const ExcelJS = require("exceljs");
+const { uploadToCloudinary } = require("../middleware/uploadExcelMiddleware");
 
 const REQUIRED_FIELDS = [
   "Sewadar_Name",
@@ -150,92 +152,123 @@ const addProspect = async (req, res) => {
   }
 };
 
-// const addProspectsByExcel = async (req, res) => {
-//   try {
-//     const filePath = req.file.path;
-//     console.log("Uploaded file path:", filePath);
+const addProspectsByExcel = async (req, res) => {
+  try {
+    const fileBuffer = req.file.buffer;
+    const fileName = req.file.originalname;
 
-//     const workbook = XLSX.readFile(filePath);
-//     const sheetName = workbook.SheetNames[0];
-//     const sheet = workbook.Sheets[sheetName];
-//     const data = XLSX.utils.sheet_to_json(sheet);
+    // Upload the Excel file to Cloudinary for record-keeping (invalid file case)
+    const uploadResult = await uploadToCloudinary(fileBuffer, fileName);
+    console.log("File uploaded to Cloudinary:", uploadResult.secure_url);
 
-//     const errors = [];
-//     const createdProspects = [];
+    // Parse the Excel file from buffer
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(fileBuffer); // Load from buffer
 
-//     for (let i = 0; i < data.length; i++) {
-//       const row = data[i];
+    const worksheet = workbook.worksheets[0];
+    const rows = [];
 
-//       // Check for missing fields
-//       const missingFields = REQUIRED_FIELDS.filter((field) => !(field in row));
-//       if (missingFields.length > 0) {
-//         errors.push({
-//           row: i + 2,
-//           error: `Missing fields: ${missingFields.join(", ")}`,
-//         });
-//         continue;
-//       }
+    // Read Excel rows and map them to JSON
+    worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+      if (rowNumber === 1) return; // Skip header row
+      const rowData = {};
+      worksheet.getRow(1).eachCell((cell, colNumber) => {
+        const key = cell.text.trim();
+        rowData[key] = row.getCell(colNumber).text.trim();
+      });
+      rows.push(rowData);
+    });
 
-//       // Check duplicates
-//       const [aadhaarExists, badgeExists, phoneExists] = await Promise.all([
-//         Prospect.findOne({ AADHAAR: row.AADHAAR }),
-//         Prospect.findOne({ Badge: row.Badge }),
-//         Prospect.findOne({ Phone_Number: row.Phone_Number }),
-//       ]);
+    const errors = [];
+    const createdProspects = [];
+    const duplicates = new Set();
 
-//       if (aadhaarExists || badgeExists || phoneExists) {
-//         let duplicateFields = [];
-//         if (aadhaarExists) duplicateFields.push("AADHAAR");
-//         if (badgeExists) duplicateFields.push("Badge");
-//         if (phoneExists) duplicateFields.push("Phone_Number");
+    // Check for missing fields, duplicates, and process valid rows
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
 
-//         errors.push({
-//           row: i + 2,
-//           error: `Duplicate in: ${duplicateFields.join(", ")}`,
-//         });
-//         continue;
-//       }
+      // Check for missing required fields
+      const missingFields = REQUIRED_FIELDS.filter((field) => !(field in row));
+      if (missingFields.length > 0) {
+        errors.push({
+          row: i + 2,
+          error: `Missing fields: ${missingFields.join(", ")}`,
+        });
+        continue;
+      }
 
-//       // Create new prospect
-//       const newProspect = new Prospect({
-//         Sewadar_Name: row.Sewadar_Name,
-//         Father_Husband_Name: row.Father_Husband_Name,
-//         Guardian_Relation: row.Guardian_Relation,
-//         Gender: row.Gender,
-//         AGE: row.AGE,
-//         AADHAAR: row.AADHAAR,
-//         Address: row.Address,
-//         Phone_Number: row.Phone_Number,
-//         Badge: row.Badge,
-//         Emergency_Contact: row.Emergency_Contact,
-//         DOB: new Date(row.DOB),
-//         DEPT_FINALISED_BY_CENTER: row.DEPT_FINALISED_BY_CENTER,
-//         Marital_Status: row.Marital_Status,
-//         DOI: new Date(row.DOI),
-//         Is_Initiated: row.Is_Initiated === "true" || row.Is_Initiated === true,
-//         Badge_Status: row.Badge_Status,
-//         Blood_Group: row.Blood_Group,
-//         Photo: row.Photo || null, // Now populated from Excel
-//       });
+      // Check for duplicates (based on Aadhaar, Badge, and Phone Number)
+      const [aadhaarExists, badgeExists, phoneExists] = await Promise.all([
+        Prospect.findOne({ AADHAAR: row.AADHAAR }),
+        Prospect.findOne({ Badge: row.Badge }),
+        Prospect.findOne({ Phone_Number: row.Phone_Number }),
+      ]);
 
-//       await newProspect.save();
-//       createdProspects.push(newProspect);
-//     }
+      if (aadhaarExists || badgeExists || phoneExists) {
+        const duplicateFields = [];
+        if (aadhaarExists) duplicateFields.push("AADHAAR");
+        if (badgeExists) duplicateFields.push("Badge");
+        if (phoneExists) duplicateFields.push("Phone_Number");
 
-//     fs.unlinkSync(filePath); // Delete uploaded file
+        // Add to errors list and mark as duplicate
+        errors.push({
+          row: i + 2,
+          error: `Duplicate in: ${duplicateFields.join(", ")}`,
+        });
+        duplicates.add(i); // Track this row index as a duplicate
+        continue;
+      }
 
-//     res.status(201).json({
-//       success: true,
-//       createdCount: createdProspects.length,
-//       errors,
-//     });
-//   } catch (error) {
-//     console.error("Error in addProspectsByExcel:", error);
-//     res.status(500).json({ message: "Server error" });
-//   }
-// };
+      // Create new prospect only if not a duplicate
+      const newProspect = new Prospect({
+        Sewadar_Name: row.Sewadar_Name,
+        Father_Husband_Name: row.Father_Husband_Name,
+        Guardian_Relation: row.Guardian_Relation,
+        Gender: row.Gender,
+        AGE: row.AGE,
+        AADHAAR: row.AADHAAR,
+        Address: row.Address,
+        Phone_Number: row.Phone_Number,
+        Badge: row.Badge,
+        Emergency_Contact: row.Emergency_Contact,
+        DOB: new Date(row.DOB),
+        DEPT_FINALISED_BY_CENTER: row.DEPT_FINALISED_BY_CENTER,
+        Marital_Status: row.Marital_Status,
+        DOI: new Date(row.DOI),
+        Is_Initiated: row.Is_Initiated === "true" || row.Is_Initiated === true,
+        Badge_Status: row.Badge_Status,
+        Blood_Group: row.Blood_Group,
+        Photo: row.Photo || null,
+      });
+
+      await newProspect.save();
+      createdProspects.push(newProspect);
+    }
+
+    // Handle if there were no valid entries
+    if (createdProspects.length === 0 && errors.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No valid entries were found. Please review the errors.",
+        cloudinaryLink: uploadResult.secure_url, // Return the invalid file Cloudinary link
+        errors,
+      });
+    }
+
+    // Return response with success and Cloudinary link to the invalid file
+    res.status(201).json({
+      success: true,
+      createdCount: createdProspects.length,
+      cloudinaryLink: uploadResult.secure_url, // Invalid file link on Cloudinary
+      errors,
+    });
+  } catch (error) {
+    console.error("Error in addProspectsByExcel:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 // Get all prospects with photo URLs
-
 const getAllProspects = async (req, res) => {
   try {
     const prospects = await Prospect.find();
@@ -260,6 +293,7 @@ const getAllProspects = async (req, res) => {
 
 module.exports = {
   addProspect,
+  addProspectsByExcel,
   getAllUsers,
   deleteUser,
   getAllProspects,
