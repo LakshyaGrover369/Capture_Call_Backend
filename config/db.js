@@ -1,24 +1,25 @@
 const mongoose = require("mongoose");
 
-const connectDB = async () => {
-  try {
-    // Modern MongoDB connection (no deprecated options needed)
-    const conn = await mongoose.connect(process.env.MONGO_URI);
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
-    return conn; // Return the connection object
-  } catch (error) {
-    console.error(`Error: ${error.message}`);
-    throw error; // Throw instead of process.exit for serverless
-  }
-};
-
-// For serverless environments - cache the connection
+// Cache the connection to avoid repeated connections
 let cachedConnection = null;
 
-module.exports = async () => {
+async function connectDB() {
   if (cachedConnection) {
     return cachedConnection;
   }
-  cachedConnection = await connectDB();
-  return cachedConnection;
-};
+
+  try {
+    const conn = await mongoose.connect(process.env.MONGO_URI, {
+      serverSelectionTimeoutMS: 5000, // Fail fast if no connection
+      socketTimeoutMS: 45000, // Close sockets after 45s inactivity
+    });
+    console.log(`MongoDB Connected: ${conn.connection.host}`);
+    cachedConnection = conn;
+    return conn;
+  } catch (error) {
+    console.error(`MongoDB Error: ${error.message}`);
+    throw error;
+  }
+}
+
+module.exports = connectDB;
