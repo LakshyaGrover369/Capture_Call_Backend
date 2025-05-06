@@ -10,13 +10,15 @@ dotenv.config();
 const app = express();
 
 // CORS Configuration
-const allowedOrigins = [
-  "https://capture-call-frontend-vkeq-lakshyas-projects-c97e54f6.vercel.app/",
-  "https://capture-call-frontend-vkeq-git-main-lakshyas-projects-c97e54f6.vercel.app/",
-  "https://capture-call-frontend-vkeq-g2jvdomhn-lakshyas-projects-c97e54f6.vercel.app",
-  "https://capture-call.vercel.app",
-  "http://localhost:5173",
-];
+const allowedOrigins =
+  process.env.NODE_ENV === "production"
+    ? [
+        "https://capture-call-frontend-vkeq-lakshyas-projects-c97e54f6.vercel.app/",
+        "https://capture-call-frontend-vkeq-git-main-lakshyas-projects-c97e54f6.vercel.app/",
+        "https://capture-call-frontend-vkeq-g2jvdomhn-lakshyas-projects-c97e54f6.vercel.app",
+        "https://capture-call.vercel.app",
+      ]
+    : ["http://localhost:5173"]; // Allow localhost in development
 
 const corsOptions = {
   origin: function (origin, callback) {
