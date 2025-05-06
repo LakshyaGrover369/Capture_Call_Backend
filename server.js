@@ -7,12 +7,25 @@ const connectDB = require("./config/db");
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.PORT || 5000;
 
-// Middleware
+// Middleware to handle CORS
+const allowedOrigins = [];
+if (process.env.NODE_ENV == "production") {
+  allowedOrigins.push("https://capture-call.vercel.app");
+} else {
+  allowedOrigins.push("http://localhost:5173");
+}
+
 app.use(
   cors({
-    origin: "https://capture-call.vercel.app",
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   })
 );
