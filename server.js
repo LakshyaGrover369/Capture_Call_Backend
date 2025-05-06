@@ -5,11 +5,6 @@ const connectDB = require("./config/db");
 const serverless = require("serverless-http");
 const path = require("path");
 
-// Import routes
-const authRoutes = require("./routes/auth");
-const userRoutes = require("./routes/user");
-const adminRoutes = require("./routes/admin");
-
 // Load env vars
 dotenv.config();
 
@@ -18,46 +13,41 @@ connectDB();
 
 const app = express();
 
-// Configure CORS properly
-const corsOptions = {
-  origin: function (origin, callback) {
-    const allowedOrigins = [
-      "https://capture-call.vercel.app",
-      "http://localhost:5173",
-    ];
-    if (allowedOrigins.includes(origin) || !origin) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-};
+// ✅ Safe, direct CORS config for serverless/Vercel
+const allowedOrigins = [
+  "https://capture-call.vercel.app",
+  "http://localhost:5173",
+];
 
-app.use(cors(corsOptions));
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  }
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200); // ✅ handles preflight
+  }
+
+  next();
+});
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Configuring the upload directory for multer
+// Serve static files
 app.use(
   "/prospectsPhotos",
   express.static(path.join(__dirname, "prospectsPhotos"))
 );
 
 // Routes
-app.use("/api/auth", authRoutes); // Use the imported routes
-app.use("/api/users", userRoutes); // Use the imported routes
-app.use("/api/admin", adminRoutes);
+app.use("/api/auth", require("./routes/auth"));
+app.use("/api/users", require("./routes/user"));
+app.use("/api/admin", require("./routes/admin"));
 
-// const PORT = process.env.PORT || 5000;
-
-// app.listen(PORT, () => {
-//   console.log(`Server is running on port ${PORT}`);
-// });
-
-// Export the app for serverless deployment
-module.exports = app;
+// ✅ Export only the handler
 module.exports.handler = serverless(app);
