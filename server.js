@@ -10,31 +10,6 @@ dotenv.config();
 const app = express();
 const PORT = 4000;
 
-// CORS Configuration
-// const allowedOrigins =
-//   process.env.NODE_ENV === "production"
-//     ? [
-//         "https://capture-call-frontend-vkeq-lakshyas-projects-c97e54f6.vercel.app/",
-//         "https://capture-call-frontend-vkeq-git-main-lakshyas-projects-c97e54f6.vercel.app/",
-//         "https://capture-call-frontend-vkeq-g2jvdomhn-lakshyas-projects-c97e54f6.vercel.app",
-//         "https://capture-call.vercel.app",
-//       ]
-//     : ["http://localhost:5173"]; // Allow localhost in development
-
-// const corsOptions = {
-//   origin: function (origin, callback) {
-//     console.log("CORS request from origin:", origin);
-//     if (!origin || allowedOrigins.includes(origin)) {
-//       callback(null, true);
-//     } else {
-//       callback(new Error("Not allowed by CORS"));
-//     }
-//   },
-//   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-//   allowedHeaders: ["Content-Type", "Authorization"],
-//   credentials: true,
-// };
-
 app.use(cors({ origin: "*" }));
 app.use(express.json());
 
@@ -53,6 +28,8 @@ app.listen(PORT, () => {
 });
 
 // Export the serverless app
-module.exports = serverless(app);
+
+// module.exports = serverless(app);
+module.exports = app;
 // Alternatively, if you need the handler export:
 // module.exports.handler = serverless(app);
