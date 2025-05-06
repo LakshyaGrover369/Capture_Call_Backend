@@ -10,7 +10,13 @@ const app = express();
 const PORT = process.env.PORT || 4000;
 
 // Middleware
-app.use(cors({ origin: "*", credentials: true }));
+app.use(
+  cors({
+    origin: "https://capture-call.vercel.app",
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 
 // Routes
