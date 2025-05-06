@@ -31,25 +31,25 @@ router.post(
   },
   addProspect
 );
-router.post(
-  "/addProspectByExcel",
-  protect,
-  authorize("user", "admin"),
-  (req, res, next) => {
-    uploadExcelMiddleware.single("ProspectsExcelData")(
-      req,
-      res,
-      function (err) {
-        if (err) {
-          console.error("Multer error:", err.message);
-          return res.status(400).json({ message: err.message });
-        }
-        next();
-      }
-    );
-  },
-  addProspectsByExcel
-);
+// router.post(
+//   "/addProspectByExcel",
+//   protect,
+//   authorize("user", "admin"),
+//   (req, res, next) => {
+//     uploadExcelMiddleware.single("ProspectsExcelData")(
+//       req,
+//       res,
+//       function (err) {
+//         if (err) {
+//           console.error("Multer error:", err.message);
+//           return res.status(400).json({ message: err.message });
+//         }
+//         next();
+//       }
+//     );
+//   },
+//   addProspectsByExcel
+// );
 router.get(
   "/getAllProspects",
   protect,
