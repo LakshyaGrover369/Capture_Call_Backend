@@ -25,13 +25,14 @@ const allowedOrigins = [
 const corsOptions = {
   origin: function (origin, callback) {
     console.log("CORS request from origin:", origin);
-
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       callback(new Error("Not allowed by CORS"));
     }
   },
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+  allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
 };
 
