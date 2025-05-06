@@ -59,3 +59,4 @@ app.use("/api/admin", require("./routes/admin"));
 
 // ✅ Export only the handler
 module.exports.handler = serverless(app);
+// module.exports = app; // For local testing, if needed
