@@ -246,16 +246,11 @@ const getAllProspects = async (req, res) => {
         .json({ success: false, message: "No prospects found" });
     }
 
-    const prospectsWithPhotoUrls = prospects.map((prospect) => ({
-      ...prospect._doc,
-      Photo: prospect.Photo
-        ? `${req.protocol}://${req.get("host")}/${prospect.Photo}` // Convert relative path to full URL
-        : null,
-    }));
-
+    // For Cloudinary, the URL is already stored in Photo field
+    // No need to construct URL if using Cloudinary
     res.status(200).json({
       success: true,
-      data: prospectsWithPhotoUrls,
+      data: prospects,
     });
   } catch (error) {
     console.error("Error fetching prospects:", error);

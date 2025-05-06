@@ -23,6 +23,8 @@ router.post(
       if (err) {
         console.error("Multer error:", err.message);
         return res.status(400).json({ message: err.message });
+      } else {
+        console.log("Multer success:", req.file); // Log the file information
       }
       next();
     });
