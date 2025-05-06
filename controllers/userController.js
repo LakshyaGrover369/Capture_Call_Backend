@@ -260,7 +260,6 @@ const getAllProspects = async (req, res) => {
 
 module.exports = {
   addProspect,
-  // addProspectsByExcel,
   getAllUsers,
   deleteUser,
   getAllProspects,

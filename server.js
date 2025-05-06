@@ -42,10 +42,10 @@ app.use(express.json());
 // app.use(express.urlencoded({ extended: true }));
 
 // Serve static files
-app.use(
-  "/prospectsPhotos",
-  express.static(path.join(__dirname, "prospectsPhotos"))
-);
+// app.use(
+//   "/prospectsPhotos",
+//   express.static(path.join(__dirname, "prospectsPhotos"))
+// );
 // const PORT = process.env.PORT || 5000; // Use environment variable or default to 5000
 
 // app.listen(PORT, () => {
