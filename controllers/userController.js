@@ -2,7 +2,9 @@ const User = require("../models/User");
 const Prospect = require("../models/Prospect");
 const fs = require("fs");
 const ExcelJS = require("exceljs");
-const { uploadToCloudinary } = require("../middleware/uploadExcelMiddleware");
+const {
+  uploadExcelToCloudinary,
+} = require("../middleware/uploadExcelMiddleware");
 
 const REQUIRED_FIELDS = [
   "Sewadar_Name",
@@ -24,6 +26,10 @@ const REQUIRED_FIELDS = [
   "Blood_Group",
   "Photo",
 ];
+// Validation functions
+const isValidPhoneNumber = (phone) => /^\d{10}$/.test(phone);
+const isValidAadhaar = (aadhaar) => /^\d{12}$/.test(aadhaar);
+const isValidDate = (date) => !isNaN(Date.parse(date));
 
 // Get all users
 const getAllUsers = async (req, res) => {
@@ -157,51 +163,86 @@ const addProspectsByExcel = async (req, res) => {
     const fileBuffer = req.file.buffer;
     const fileName = req.file.originalname;
 
-    // Upload the Excel file to Cloudinary for record-keeping (invalid file case)
-    const uploadResult = await uploadToCloudinary(fileBuffer, fileName);
-    console.log("File uploaded to Cloudinary:", uploadResult.secure_url);
+    // Upload the Excel file to Cloudinary
+    const uploadResult = await uploadExcelToCloudinary(fileBuffer, fileName);
+    const cloudinaryLink = uploadResult.secure_url;
 
-    // Parse the Excel file from buffer
+    // Parse the Excel file
     const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(fileBuffer); // Load from buffer
-
+    await workbook.xlsx.load(fileBuffer);
     const worksheet = workbook.worksheets[0];
-    const rows = [];
 
-    // Read Excel rows and map them to JSON
+    const rows = [];
+    const headerRow = worksheet.getRow(1);
+    const headers = headerRow.values
+      .slice(1)
+      .map((header) => header.toString().trim());
+
     worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
       if (rowNumber === 1) return; // Skip header row
       const rowData = {};
-      worksheet.getRow(1).eachCell((cell, colNumber) => {
-        const key = cell.text.trim();
-        rowData[key] = row.getCell(colNumber).text.trim();
+      headers.forEach((header, index) => {
+        rowData[header] = row.getCell(index + 1).text.trim();
       });
-      rows.push(rowData);
+      rows.push({ rowNumber, data: rowData });
     });
 
     const errors = [];
     const createdProspects = [];
-    const duplicates = new Set();
+    const seen = new Set();
 
-    // Check for missing fields, duplicates, and process valid rows
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i];
-
+    for (const { rowNumber, data } of rows) {
       // Check for missing required fields
-      const missingFields = REQUIRED_FIELDS.filter((field) => !(field in row));
+      const missingFields = REQUIRED_FIELDS.filter((field) => !data[field]);
       if (missingFields.length > 0) {
         errors.push({
-          row: i + 2,
+          row: rowNumber,
           error: `Missing fields: ${missingFields.join(", ")}`,
         });
         continue;
       }
 
-      // Check for duplicates (based on Aadhaar, Badge, and Phone Number)
+      // Validate field formats
+      if (!isValidPhoneNumber(data["Phone_Number"])) {
+        errors.push({
+          row: rowNumber,
+          error: "Invalid Phone Number format",
+        });
+        continue;
+      }
+
+      if (!isValidAadhaar(data["AADHAAR"])) {
+        errors.push({
+          row: rowNumber,
+          error: "Invalid AADHAAR format",
+        });
+        continue;
+      }
+
+      if (!isValidDate(data["DOB"]) || !isValidDate(data["DOI"])) {
+        errors.push({
+          row: rowNumber,
+          error: "Invalid date format in DOB or DOI",
+        });
+        continue;
+      }
+
+      // Check for duplicates in the current batch
+      const uniqueKey = `${data["AADHAAR"]}-${data["Badge"]}-${data["Phone_Number"]}`;
+      if (seen.has(uniqueKey)) {
+        errors.push({
+          row: rowNumber,
+          error: "Duplicate entry in the uploaded file",
+        });
+        continue;
+      }
+      seen.add(uniqueKey);
+
+      // Check for duplicates in the database
       const [aadhaarExists, badgeExists, phoneExists] = await Promise.all([
-        Prospect.findOne({ AADHAAR: row.AADHAAR }),
-        Prospect.findOne({ Badge: row.Badge }),
-        Prospect.findOne({ Phone_Number: row.Phone_Number }),
+        Prospect.findOne({ AADHAAR: data["AADHAAR"] }),
+        Prospect.findOne({ Badge: data["Badge"] }),
+        Prospect.findOne({ Phone_Number: data["Phone_Number"] }),
       ]);
 
       if (aadhaarExists || badgeExists || phoneExists) {
@@ -210,61 +251,62 @@ const addProspectsByExcel = async (req, res) => {
         if (badgeExists) duplicateFields.push("Badge");
         if (phoneExists) duplicateFields.push("Phone_Number");
 
-        // Add to errors list and mark as duplicate
         errors.push({
-          row: i + 2,
-          error: `Duplicate in: ${duplicateFields.join(", ")}`,
+          row: rowNumber,
+          error: `Duplicate in database: ${duplicateFields.join(", ")}`,
         });
-        duplicates.add(i); // Track this row index as a duplicate
         continue;
       }
 
-      // Create new prospect only if not a duplicate
+      // Create new prospect
       const newProspect = new Prospect({
-        Sewadar_Name: row.Sewadar_Name,
-        Father_Husband_Name: row.Father_Husband_Name,
-        Guardian_Relation: row.Guardian_Relation,
-        Gender: row.Gender,
-        AGE: row.AGE,
-        AADHAAR: row.AADHAAR,
-        Address: row.Address,
-        Phone_Number: row.Phone_Number,
-        Badge: row.Badge,
-        Emergency_Contact: row.Emergency_Contact,
-        DOB: new Date(row.DOB),
-        DEPT_FINALISED_BY_CENTER: row.DEPT_FINALISED_BY_CENTER,
-        Marital_Status: row.Marital_Status,
-        DOI: new Date(row.DOI),
-        Is_Initiated: row.Is_Initiated === "true" || row.Is_Initiated === true,
-        Badge_Status: row.Badge_Status,
-        Blood_Group: row.Blood_Group,
-        Photo: row.Photo || null,
+        Sewadar_Name: data["Sewadar_Name"],
+        Father_Husband_Name: data["Father_Husband_Name"],
+        Guardian_Relation: data["Guardian_Relation"],
+        Gender: data["Gender"],
+        AGE: data["AGE"],
+        AADHAAR: data["AADHAAR"],
+        Address: data["Address"],
+        Phone_Number: data["Phone_Number"],
+        Badge: data["Badge"],
+        Emergency_Contact: data["Emergency_Contact"],
+        DOB: new Date(data["DOB"]),
+        DEPT_FINALISED_BY_CENTER: data["DEPT_FINALISED_BY_CENTER"],
+        Marital_Status: data["Marital_Status"],
+        DOI: new Date(data["DOI"]),
+        Is_Initiated:
+          data["Is_Initiated"] === "true" || data["Is_Initiated"] === true,
+        Badge_Status: data["Badge_Status"],
+        Blood_Group: data["Blood_Group"],
+        Photo: data["Photo"] || null,
       });
 
       await newProspect.save();
       createdProspects.push(newProspect);
     }
 
-    // Handle if there were no valid entries
     if (createdProspects.length === 0 && errors.length > 0) {
-      return res.status(400).json({
-        success: false,
+      return res.status(200).json({
+        message_id: "UPLOAD_FAILED",
         message: "No valid entries were found. Please review the errors.",
-        cloudinaryLink: uploadResult.secure_url, // Return the invalid file Cloudinary link
+        cloudinaryLink,
         errors,
       });
     }
 
-    // Return response with success and Cloudinary link to the invalid file
     res.status(201).json({
-      success: true,
+      message_id: "UPLOAD_SUCCESS",
+      message: "Prospects uploaded successfully",
       createdCount: createdProspects.length,
-      cloudinaryLink: uploadResult.secure_url, // Invalid file link on Cloudinary
+      cloudinaryLink,
       errors,
     });
   } catch (error) {
     console.error("Error in addProspectsByExcel:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({
+      message_id: "SERVER_ERROR",
+      message: "An error occurred while processing the file.",
+    });
   }
 };
 

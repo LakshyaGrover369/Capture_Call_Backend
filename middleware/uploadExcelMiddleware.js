@@ -1,9 +1,9 @@
 const multer = require("multer");
-const cloudinary = require("../config/cloudinary");
 const streamifier = require("streamifier");
+const cloudinary = require("../config/cloudinary");
 
-// Multer setup: store files in memory
 const storage = multer.memoryStorage();
+
 const fileFilter = (req, file, cb) => {
   const allowedMimeTypes = [
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -16,10 +16,9 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-const upload = multer({ storage, fileFilter });
+const uploadExcel = multer({ storage, fileFilter });
 
-// Upload to Cloudinary
-const uploadToCloudinary = (fileBuffer, fileName) => {
+const uploadExcelToCloudinary = (fileBuffer, fileName) => {
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
       {
@@ -36,4 +35,4 @@ const uploadToCloudinary = (fileBuffer, fileName) => {
   });
 };
 
-module.exports = { upload, uploadToCloudinary };
+module.exports = { uploadExcel, uploadExcelToCloudinary };

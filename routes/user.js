@@ -8,8 +8,9 @@ const {
   getAllProspects,
 } = require("../controllers/userController");
 const { protect, authorize } = require("../middleware/auth");
+const { uploadExcel } = require("../middleware/uploadExcelMiddleware");
+// const {uploadExcelMiddleware} = require("../middleware/uploadExcelMiddleware");
 const uploadPhotoMiddleware = require("../middleware/uploadPhotoMiddleware");
-const uploadExcelMiddleware = require("../middleware/uploadExcelMiddleware");
 
 // Routes
 router.get("/getAllUsers", protect, authorize("admin"), getAllUsers);
@@ -35,21 +36,7 @@ router.post(
   "/addProspectByExcel",
   protect,
   authorize("user", "admin"),
-  (req, res, next) => {
-    uploadExcelMiddleware.single("excelFile"),
-      async (req, res) => {
-        try {
-          const result = await uploadToCloudinary(
-            req.file.buffer,
-            req.file.originalname
-          );
-          res.json({ url: result.secure_url });
-        } catch (err) {
-          res.status(500).json({ error: err.message });
-        }
-      };
-    next();
-  },
+  uploadExcel.single("ProspectsExcelData"),
   addProspectsByExcel
 );
 router.get(
