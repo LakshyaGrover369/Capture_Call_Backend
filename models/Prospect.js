@@ -66,6 +66,12 @@ const ProspectSchema = new mongoose.Schema(
       type: String,
       enum: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"],
     },
+    Call_Result: {
+      type: String,
+    },
+    Remarks: {
+      type: String,
+    },
   },
   {
     timestamps: true,

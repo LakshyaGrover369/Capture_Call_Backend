@@ -4,6 +4,7 @@ const {
   getAllUsers,
   deleteUser,
   getAllProspects,
+  getAllProspectsByExcel,
 } = require("../controllers/userController");
 const { protect, authorize } = require("../middleware/auth");
 
@@ -15,6 +16,12 @@ router.get(
   protect,
   authorize("user", "admin"),
   getAllProspects
+);
+router.get(
+  "/getAllProspectsByExcel",
+  protect,
+  authorize("user", "admin"),
+  getAllProspectsByExcel
 );
 
 module.exports = router;
