@@ -4,6 +4,7 @@ const {
   getAllUsers,
   deleteUser,
   getAllProspects,
+  getNominalList,
   getProspect,
   EditProspect,
   getAllProspectsByExcel,
@@ -19,6 +20,12 @@ router.get(
   protect,
   authorize("user", "admin"),
   getAllProspects
+);
+router.get(
+  "/getNominalList",
+  protect,
+  authorize("user", "admin"),
+  getNominalList
 );
 router.get(
   "/getProspect/:id",

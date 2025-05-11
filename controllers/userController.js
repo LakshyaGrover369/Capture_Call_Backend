@@ -69,6 +69,30 @@ const getAllProspects = async (req, res) => {
   }
 };
 
+// Get nominal list of prospects based on Call Result
+const getNominalList = async (req, res) => {
+  try {
+    const prospects = await Prospect.find({
+      Call_Result: { $exists: true, $ne: null },
+    });
+
+    if (prospects.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No prospects found with Call Result",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: prospects,
+    });
+  } catch (error) {
+    console.error("Error fetching nominal list:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
 // Get a single prospect by ID from the request body
 const getProspect = async (req, res) => {
   try {
@@ -199,6 +223,7 @@ module.exports = {
   getAllUsers,
   deleteUser,
   getAllProspects,
+  getNominalList,
   getProspect,
   EditProspect,
   getAllProspectsByExcel,
