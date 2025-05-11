@@ -12,7 +12,7 @@ const PORT = process.env.PORT || 5000;
 // Middleware to handle CORS
 const allowedOrigins = [];
 if (process.env.NODE_ENV == "production") {
-  allowedOrigins.push("https://capture-call.vercel.app");
+  allowedOrigins.push("https://ring-buddy.vercel.app");
 } else {
   allowedOrigins.push("http://localhost:5173");
 }
