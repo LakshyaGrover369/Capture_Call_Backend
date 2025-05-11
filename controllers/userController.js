@@ -69,6 +69,61 @@ const getAllProspects = async (req, res) => {
   }
 };
 
+// Get a single prospect by ID from the request body
+const getProspect = async (req, res) => {
+  try {
+    const { id } = req.params; // Get ID from URL parameters
+    console.log("ID:", id);
+    const prospect = await Prospect.findById(id);
+
+    if (!prospect) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Prospect not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: prospect,
+    });
+  } catch (error) {
+    console.error("Error fetching prospect:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+// Edit a single prospect by ID from the request body
+const EditProspect = async (req, res) => {
+  try {
+    const { id, ...updateData } = req.body;
+    console.log("ID:", id);
+
+    if (req.file && req.file.path) {
+      updateData.Photo = req.file.path;
+    }
+
+    const prospect = await Prospect.findByIdAndUpdate(id, updateData, {
+      new: true, // Return the updated document
+      runValidators: true, // Ensure validation rules are applied
+    });
+
+    if (!prospect) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Prospect not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Prospect updated successfully",
+      data: prospect,
+    });
+  } catch (error) {
+    console.error("Error updating prospect:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
 // Get all prospects By Excel
 const getAllProspectsByExcel = async (req, res) => {
   try {
@@ -144,5 +199,7 @@ module.exports = {
   getAllUsers,
   deleteUser,
   getAllProspects,
+  getProspect,
+  EditProspect,
   getAllProspectsByExcel,
 };

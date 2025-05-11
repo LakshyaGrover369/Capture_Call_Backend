@@ -68,6 +68,7 @@ const ProspectSchema = new mongoose.Schema(
     },
     Call_Result: {
       type: String,
+      enum: ["Not Interested", "Call Back", "Selected", "Others"],
     },
     Remarks: {
       type: String,
