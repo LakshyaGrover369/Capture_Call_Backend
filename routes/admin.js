@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const {
+  getAdminDashboardData,
   createAdmin,
   getAllAdmins,
   deleteAdmin,
@@ -12,6 +13,12 @@ const uploadPhotoMiddleware = require("../middleware/uploadPhotoMiddleware");
 const { uploadExcel } = require("../middleware/uploadExcelMiddleware");
 
 // Routes
+router.get(
+  "/getAdminDashboardData",
+  protect,
+  authorize("admin"),
+  getAdminDashboardData
+);
 router.post(
   "/create",
   protect,

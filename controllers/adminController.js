@@ -30,6 +30,71 @@ const isValidPhoneNumber = (phone) => /^\d{10}$/.test(phone);
 const isValidAadhaar = (aadhaar) => /^\d{12}$/.test(aadhaar);
 const isValidDate = (date) => !isNaN(Date.parse(date));
 
+// Get admin dashboard data
+const getAdminDashboardData = async (req, res) => {
+  try {
+    const totalUsers = await User.countDocuments();
+    const totalAdmins = await User.countDocuments({ role: "admin" });
+    const totalRegularUsers = await User.countDocuments({ role: "user" });
+
+    const totalProspects = await Prospect.countDocuments();
+    const totalMaleProspects = await Prospect.countDocuments({
+      Gender: "Male",
+    });
+    const totalFemaleProspects = await Prospect.countDocuments({
+      Gender: "Female",
+    });
+
+    const totalMaleOpenBadge = await Prospect.countDocuments({
+      Gender: "Male",
+      Badge_Status: "Open",
+    });
+    const totalFemaleOpenBadge = await Prospect.countDocuments({
+      Gender: "Female",
+      Badge_Status: "Open",
+    });
+
+    const totalMalePermanentBadge = await Prospect.countDocuments({
+      Gender: "Male",
+      Badge_Status: "Permanent",
+    });
+    const totalFemalePermanentBadge = await Prospect.countDocuments({
+      Gender: "Female",
+      Badge_Status: "Permanent",
+    });
+
+    const totalMaleElderlyBadge = await Prospect.countDocuments({
+      Gender: "Male",
+      Badge_Status: "Elderly",
+    });
+    const totalFemaleElderlyBadge = await Prospect.countDocuments({
+      Gender: "Female",
+      Badge_Status: "Elderly",
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        totalUsers,
+        totalAdmins,
+        totalRegularUsers,
+        totalProspects,
+        totalMaleProspects,
+        totalFemaleProspects,
+        totalMaleOpenBadge,
+        totalFemaleOpenBadge,
+        totalMalePermanentBadge,
+        totalFemalePermanentBadge,
+        totalMaleElderlyBadge,
+        totalFemaleElderlyBadge,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 // Create admin
 const createAdmin = async (req, res) => {
   try {
@@ -352,6 +417,7 @@ const addProspectsByExcel = async (req, res) => {
 };
 
 module.exports = {
+  getAdminDashboardData,
   createAdmin,
   getAllAdmins,
   deleteAdmin,

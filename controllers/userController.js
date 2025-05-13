@@ -9,6 +9,51 @@ const {
 } = require("../middleware/downloadExcelMiddleware");
 // const streamifier = require("streamifier");
 
+// Get user dashboard data
+const getUserDashboardData = async (req, res) => {
+  try {
+    const totalProspects = await Prospect.countDocuments();
+    const prospectsWithCallResultNull = await Prospect.countDocuments({
+      Call_Result: null,
+    });
+    const prospectsWithCallResultCallback = await Prospect.countDocuments({
+      Call_Result: "callback",
+    });
+    const prospectsWithOpenBadge = await Prospect.countDocuments({
+      Badge: "open",
+    });
+    const prospectsWithPermanentBadge = await Prospect.countDocuments({
+      Badge: "permanent",
+    });
+    const prospectsWithElderlyBadge = await Prospect.countDocuments({
+      Badge: "elderly",
+    });
+    const prospectsWithGenderFemale = await Prospect.countDocuments({
+      Gender: "female",
+    });
+    const prospectsWithGenderMale = await Prospect.countDocuments({
+      Gender: "male",
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        totalProspects,
+        prospectsWithCallResultNull,
+        prospectsWithCallResultCallback,
+        prospectsWithOpenBadge,
+        prospectsWithPermanentBadge,
+        prospectsWithElderlyBadge,
+        prospectsWithGenderFemale,
+        prospectsWithGenderMale,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching dashboard data:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
 // Get all users
 const getAllUsers = async (req, res) => {
   try {
@@ -220,6 +265,7 @@ const getAllProspectsByExcel = async (req, res) => {
 };
 
 module.exports = {
+  getUserDashboardData,
   getAllUsers,
   deleteUser,
   getAllProspects,
