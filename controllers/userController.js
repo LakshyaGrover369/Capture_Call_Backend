@@ -118,7 +118,7 @@ const getAllProspects = async (req, res) => {
 const getNominalList = async (req, res) => {
   try {
     const prospects = await Prospect.find({
-      Call_Result: { $exists: true, $ne: null },
+      Call_Result: "Selected",
     });
 
     if (prospects.length === 0) {
@@ -142,7 +142,7 @@ const getNominalList = async (req, res) => {
 const getNominalListByExcel = async (req, res) => {
   try {
     const prospects = await Prospect.find({
-      Call_Result: { $exists: true, $ne: null },
+      Call_Result: "Selected",
     });
 
     if (prospects.length === 0) {
