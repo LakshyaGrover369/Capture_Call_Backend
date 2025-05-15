@@ -17,22 +17,22 @@ const getUserDashboardData = async (req, res) => {
       Call_Result: null,
     });
     const prospectsWithCallResultCallback = await Prospect.countDocuments({
-      Call_Result: "callback",
+      Call_Result: "Call Back",
     });
     const prospectsWithOpenBadge = await Prospect.countDocuments({
-      Badge: "open",
+      Badge_Status: "Open",
     });
     const prospectsWithPermanentBadge = await Prospect.countDocuments({
-      Badge: "permanent",
+      Badge_Status: "Permanent",
     });
     const prospectsWithElderlyBadge = await Prospect.countDocuments({
-      Badge: "elderly",
+      Badge_Status: "Elderly",
     });
     const prospectsWithGenderFemale = await Prospect.countDocuments({
-      Gender: "female",
+      Gender: "Female",
     });
     const prospectsWithGenderMale = await Prospect.countDocuments({
-      Gender: "male",
+      Gender: "Male",
     });
 
     res.status(200).json({
